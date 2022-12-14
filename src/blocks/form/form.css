@@ -1,0 +1,11 @@
+.form {
+  max-width: 358px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media screen and (max-width: 950px) {
+  .form {
+    width: calc(100%*238/282);
+  }
+}

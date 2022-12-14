@@ -1,0 +1,26 @@
+.profile__button_type_edit {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #fff;
+  background-image: url(../../../../images/pen-button.svg);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 42%;
+  margin-top: 32px;
+  transition: opacity .2s linear;
+}
+
+.profile__button_type_edit:hover {
+  opacity: .6;
+}
+
+@media screen and (max-width: 700px) {
+  .profile__button_type_edit {
+    margin: 0;
+    width: 18px;
+    height: 18px;
+    position: absolute;
+    bottom: 66px;
+    right: -28px;
+  }
+}

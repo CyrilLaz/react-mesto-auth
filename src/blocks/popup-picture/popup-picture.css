@@ -1,0 +1,6 @@
+.popup-picture {
+  background-color: rgba(0, 0, 0, .9);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .3s linear, visibility .3s linear;
+}
