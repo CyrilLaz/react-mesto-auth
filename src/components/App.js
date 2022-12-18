@@ -7,8 +7,9 @@ import ProtectedRoute from './ProtectedRoute';
 import Login from './Login';
 import Register from './Register';
 import InfoTooltip from './InfoTooltip';
-import React, { useState, useEffect } from 'react';
-import { Route, Switch, Redirect, useRouteMatch, Link } from 'react-router-dom';
+import * as Auth from './Auth';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Route, Switch, Redirect, Link, useHistory } from 'react-router-dom';
 import Api from '../utils/Api';
 import { CurrentUserContext } from '../contexts/CurrentUserContext';
 import { EditProfilePopup } from './EditProfilePopup';
@@ -18,7 +19,13 @@ import { useFormValidator } from './useFormValidator';
 import { ConfirmDeletionPopup } from './ConfirmationDeletePopup';
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(true);
+  const history = useHistory();
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [stateInfoTool, setStateInfoTool] = useState({
+    isOpen: false,
+    isSuccess: false,
+  });
+  const [userEmail,setUserEmail]=useState('')
   const [selectedCard, setSelectedCard] = useState({});
   const [buttonText, setButtonText] = useState('');
   const [currentUser, setCurrentUser] = useState({});
@@ -31,11 +38,6 @@ function App() {
     toggleButtonDisabling,
   ] = useFormValidator();
 
-  // const isLogin = useRouteMatch('/sign-in');
-  // const isLogup = useRouteMatch('/sign-up');
-
-  // console.log(isLogin);
-  // console.log('url',url, '###', 'path',path);
   const [
     {
       isEditProfilePopupOpen,
@@ -47,15 +49,27 @@ function App() {
     setPopupOpen,
   ] = useState({});
 
+  const checkToken = useCallback(()=>{
+    const jwt = localStorage.getItem('jwt');
+    if (jwt) {
+      Auth.getContent(jwt).then(res=>{
+        setLoggedIn(true);
+        setUserEmail(res.email);
+        history.push('/');
+      })
+    }
+  },[history]);
   // получаем информацию для загрузки
   useEffect(() => {
+    checkToken();
+
     Promise.all([Api.getUserInfo(), Api.getInitialCards()])
       .then(([userInfo, cards]) => {
         setCurrentUser(userInfo);
         setCards(cards);
       })
       .catch((err) => console.log(err));
-  }, []);
+  }, [checkToken]);
 
   function handleCardClick(props) {
     setSelectedCard({ ...props, isOpen: true });
@@ -101,6 +115,7 @@ function App() {
 
   function closeAllPopups() {
     setPopupOpen({});
+    setStateInfoTool({ ...stateInfoTool, isOpen: false });
     resetForm();
     setSelectedCard({ ...selectedCard, isOpen: false });
   }
@@ -150,20 +165,58 @@ function App() {
     });
   }
 
+  function onRegister(password, email) {
+    Auth.register(password, email)
+      .then((res) => {
+        if (res.data) {
+          setStateInfoTool({ isSuccess: true, isOpen: true });
+        } else if (res.error) {
+          console.log(res.error);
+          setStateInfoTool({ isSuccess: false, isOpen: true });
+        } else {
+          setStateInfoTool({ isSuccess: false, isOpen: true });
+        }
+      })
+      .catch(console.log);
+  }
+
+  function onLogin(password, email) {
+    Auth.login(password, email).then((res) => {
+      if (res.token) {
+        localStorage.setItem('jwt', res.token);
+        setLoggedIn(true);
+        setUserEmail(email);
+        history.push('/');
+      } else if (res.error) {
+        console.log(res.error);
+        setStateInfoTool({ isSuccess: false, isOpen: true });
+      } else {
+        setStateInfoTool({ isSuccess: false, isOpen: true });
+      }
+    });
+  }
+
+  function onSignOut(e) {
+    localStorage.removeItem('jwt');
+    setLoggedIn(false);
+  }
+
   return (
     <div className="App">
       <div className="App__container">
         <CurrentUserContext.Provider value={currentUser}>
+          <InfoTooltip {...stateInfoTool} onClose={closeAllPopups} />
           <Switch>
             <Route exact path="/">
               <Header
                 menu={
                   <>
-                    <span>example@email.com</span>
+                    <span>{userEmail}</span>
                     <Link
                       className="header__link"
                       style={{ color: '#A9A9A9' }}
-                      to="/sign-up"
+                      onClick={onSignOut}
+                      to='/'
                     >
                       Выход
                     </Link>
@@ -225,34 +278,30 @@ function App() {
               />
               <Footer />
             </Route>
-            <Route>
-              <Route path="/sign-in">
-                <Header
-                  menu={
-                    <>
-                      <Link className="header__link" to="/sign-up">
-                        Регистрация
-                      </Link>
-                    </>
-                  }
-                />
-                <Login />
-              </Route>
-              <Route path="/sign-up">
-                <Header
-                  menu={
-                    <>
-                      <Link className="header__link" to="/sign-in">
-                        Вход
-                      </Link>
-                    </>
-                  }
-                />
-                <Register />
-              </Route>
-              <InfoTooltip isOpen={true} isSuccess={false}/>
+            <Route path="/sign-in">
+              <Header
+                menu={
+                  <>
+                    <Link className="header__link" to="/sign-up">
+                      Регистрация
+                    </Link>
+                  </>
+                }
+              />
+              <Login onLogin={onLogin} />
             </Route>
-
+            <Route path="/sign-up">
+              <Header
+                menu={
+                  <>
+                    <Link className="header__link" to="/sign-in">
+                      Вход
+                    </Link>
+                  </>
+                }
+              />
+              <Register onRegister={onRegister} />
+            </Route>
             <Route path="*">
               <Redirect to="/" />
             </Route>
