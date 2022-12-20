@@ -7,7 +7,7 @@ import ProtectedRoute from './ProtectedRoute';
 import Login from './Login';
 import Register from './Register';
 import InfoTooltip from './InfoTooltip';
-import * as Auth from './Auth';
+import * as Auth from '../utils/Auth';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Route, Switch, Redirect, Link, useHistory } from 'react-router-dom';
 import Api from '../utils/Api';
@@ -15,7 +15,7 @@ import { CurrentUserContext } from '../contexts/CurrentUserContext';
 import { EditProfilePopup } from './EditProfilePopup';
 import { EditAvatarPopup } from './EditAvatarPopup';
 import { AddPlacePopup } from './AddPlacePopup';
-import { useFormValidator } from './useFormValidator';
+import { useFormValidator } from '../hooks/useFormValidator';
 import { ConfirmDeletionPopup } from './ConfirmationDeletePopup';
 
 function App() {
@@ -25,7 +25,7 @@ function App() {
     isOpen: false,
     isSuccess: false,
   });
-  const [userEmail,setUserEmail]=useState('')
+  const [userEmail, setUserEmail] = useState('');
   const [selectedCard, setSelectedCard] = useState({});
   const [buttonText, setButtonText] = useState('');
   const [currentUser, setCurrentUser] = useState({});
@@ -49,26 +49,31 @@ function App() {
     setPopupOpen,
   ] = useState({});
 
-  const checkToken = useCallback(()=>{
-    const jwt = localStorage.getItem('jwt');
-    if (jwt) {
-      Auth.getContent(jwt).then(res=>{
-        setLoggedIn(true);
-        setUserEmail(res.email);
-        history.push('/');
-      })
-    }
-  },[history]);
-  // получаем информацию для загрузки
-  useEffect(() => {
-    checkToken();
-
+  function getContent() {
     Promise.all([Api.getUserInfo(), Api.getInitialCards()])
       .then(([userInfo, cards]) => {
         setCurrentUser(userInfo);
         setCards(cards);
       })
       .catch((err) => console.log(err));
+  }
+
+  const checkToken = useCallback(() => {
+    const jwt = localStorage.getItem('jwt');
+    if (jwt) {
+      Auth.getContent(jwt)
+        .then((data) => {
+          setUserEmail(data.email);
+          setLoggedIn(true);
+          history.push('/');
+        })
+        .then(() => getContent())
+        .catch((err) => console.log(err));
+    }
+  }, [history]);
+
+  useEffect(() => {
+    checkToken();
   }, [checkToken]);
 
   function handleCardClick(props) {
@@ -169,31 +174,47 @@ function App() {
     Auth.register(password, email)
       .then((res) => {
         if (res.data) {
-          setStateInfoTool({ isSuccess: true, isOpen: true });
-        } else if (res.error) {
-          console.log(res.error);
-          setStateInfoTool({ isSuccess: false, isOpen: true });
+          setStateInfoTool({
+            isSuccess: true,
+            isOpen: true,
+            message: 'Вы успешно зарегистрировались!',
+          });
+          history.push('/sign-in');
         } else {
-          setStateInfoTool({ isSuccess: false, isOpen: true });
+          return Promise.reject(res.error);
         }
       })
-      .catch(console.log);
+      .catch((err) => {
+        console.error(err);
+        setStateInfoTool({
+          isSuccess: false,
+          isOpen: true,
+          message: 'Что-то пошло не так! Попробуйте ещё раз.',
+        });
+      });
   }
 
   function onLogin(password, email) {
-    Auth.login(password, email).then((res) => {
-      if (res.token) {
-        localStorage.setItem('jwt', res.token);
-        setLoggedIn(true);
-        setUserEmail(email);
-        history.push('/');
-      } else if (res.error) {
-        console.log(res.error);
-        setStateInfoTool({ isSuccess: false, isOpen: true });
-      } else {
-        setStateInfoTool({ isSuccess: false, isOpen: true });
-      }
-    });
+    Auth.login(password, email)
+      .then((res) => {
+        if (res.token) {
+          localStorage.setItem('jwt', res.token);
+          setUserEmail(email);
+          getContent();
+          setLoggedIn(true);
+          history.push('/');
+        } else {
+          return Promise.reject(res.message);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        setStateInfoTool({
+          isSuccess: false,
+          isOpen: true,
+          message: 'Что-то пошло не так! Попробуйте ещё раз.',
+        });
+      });
   }
 
   function onSignOut(e) {
@@ -216,7 +237,7 @@ function App() {
                       className="header__link"
                       style={{ color: '#A9A9A9' }}
                       onClick={onSignOut}
-                      to='/'
+                      to="/"
                     >
                       Выход
                     </Link>

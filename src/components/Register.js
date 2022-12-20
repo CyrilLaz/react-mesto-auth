@@ -44,7 +44,7 @@ export default function Register(props) {
             required
           ></input>
           <button className="form__button form__button_bright" type="submit">
-            Войти
+          Зарегистрироваться
           </button>
         </fieldset>
       </form>

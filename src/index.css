@@ -15,7 +15,7 @@
 @import url(./blocks/info-tool/__icon/info-tool__icon.css);
 @import url(./blocks/info-tool/_type/info-tool__icon_type_error.css);
 @import url(./blocks/info-tool/_type/info-tool__icon_type_success.css);
-@import url(./blocks/info-tool/__messedge/info-tool__messedge.css);
+@import url(./blocks/info-tool/__message/info-tool__message.css);
 
 
 
