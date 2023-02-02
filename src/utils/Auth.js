@@ -1,7 +1,7 @@
-export const BASE_URL = 'http://localhost:3000';
+const {REACT_APP_BASE_URL='http://localhost:3000'} = process.env;
 
 export const register = (password, email) => {
-  return fetch(`${BASE_URL}/signup`, {
+  return fetch(`${REACT_APP_BASE_URL}/signup`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -13,20 +13,20 @@ export const register = (password, email) => {
 };
 
 export const login = (password, email) => {
-  return fetch(`${BASE_URL}/signin`, {
+  return fetch(`${REACT_APP_BASE_URL}/signin`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials : 'include',
     body: JSON.stringify({ password, email }),
   }).then((response) => {
-    console.log(response);
     return response.json();
   });
 };
 
 export const logout = () => {
-  return fetch(`${BASE_URL}/signout`, {
+  return fetch(`${REACT_APP_BASE_URL}/signout`, {
     method: 'DELETE',
     credentials: 'include',
   }).then((response) => response.json());

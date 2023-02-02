@@ -1,3 +1,5 @@
+const {REACT_APP_BASE_URL='http://localhost:3000'} = process.env;
+
 class Api {
   constructor({ baseUrl, headers, options }) {
     this.baseUrl = baseUrl;
@@ -17,7 +19,7 @@ class Api {
   getUserInfo() {
     return fetch(`${this.baseUrl}/users/me`, {
       headers: this.headers,
-      credentials: 'include',
+      ...this.options,
     }).then(this._checkResponce());
   }
 
@@ -47,7 +49,7 @@ class Api {
   getInitialCards() {
     return fetch(`${this.baseUrl}/cards`, {
       headers: this.headers,
-      credentials: 'include',
+      ...this.options,
     }).then(this._checkResponce());
   }
 
@@ -92,7 +94,7 @@ class Api {
 }
 
 export default Api = new Api({
-  baseUrl: 'http://localhost:3000',
+  baseUrl: REACT_APP_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
