@@ -49,39 +49,29 @@ function App() {
     setPopupOpen,
   ] = useState({});
 
-  function getContent() {
+  const getContent = useCallback(() => {
     Promise.all([Api.getUserInfo(), Api.getInitialCards()])
       .then(([userInfo, cards]) => {
-        setCurrentUser(userInfo);
-        setCards(cards);
-      })
-      .catch((err) => console.log(err));
-  }
-
-  const checkToken = useCallback(() => {
-    const jwt = localStorage.getItem('jwt');
-    if (jwt) {
-      Auth.getContent(jwt)
-        .then((data) => {
-          setUserEmail(data.email);
+          setCurrentUser(userInfo);
+          setUserEmail(userInfo.email);
+          setCards(cards);
           setLoggedIn(true);
           history.push('/');
         })
-        .then(() => getContent())
         .catch((err) => console.log(err));
-    }
   }, [history]);
 
   useEffect(() => {
-    checkToken();
-  }, [checkToken]);
+    getContent();
+  }, [getContent]);
 
   function handleCardClick(props) {
     setSelectedCard({ ...props, isOpen: true });
   }
 
   function handleCardLike(card) {
-    const isLiked = card.likes.some((i) => i._id === currentUser._id);
+    console.log(currentUser);
+    const isLiked = card.likes.some((i) => i === currentUser._id);
 
     Api.changeLikeCardStatus(card._id, !isLiked)
       .then((newCard) => {
@@ -196,10 +186,9 @@ function App() {
 
   function onLogin(password, email) {
     Auth.login(password, email)
-      .then((res) => {
-        if (res.token) {
-          localStorage.setItem('jwt', res.token);
-          setUserEmail(email);
+      .then(({res}) => {
+        if (res.data) {
+          setUserEmail(res.data.email);
           getContent();
           setLoggedIn(true);
           history.push('/');
@@ -253,8 +242,9 @@ function App() {
                 cards={cards.map((card) => {
                   return Card({
                     ...card,
-                    isOwn: card.owner._id === currentUser._id,
-                    isLiked: card.likes.some((i) => i._id === currentUser._id),
+                    isOwn: true,
+                    isOwn: card.owner === currentUser._id,
+                    isLiked: card.likes.some((i) => i === currentUser._id),
                     handleCardClick,
                     handleCardLike,
                     handleConfirmationDelete,
