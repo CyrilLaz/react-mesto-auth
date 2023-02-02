@@ -20,6 +20,14 @@ export const login = (password, email) => {
     },
     body: JSON.stringify({ password, email }),
   }).then((response) => {
+    console.log(response);
     return response.json();
   });
+};
+
+export const logout = () => {
+  return fetch(`${BASE_URL}/signout`, {
+    method: 'DELETE',
+    credentials: 'include',
+  }).then((response) => response.json());
 };

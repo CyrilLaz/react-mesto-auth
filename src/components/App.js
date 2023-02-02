@@ -52,13 +52,13 @@ function App() {
   const getContent = useCallback(() => {
     Promise.all([Api.getUserInfo(), Api.getInitialCards()])
       .then(([userInfo, cards]) => {
-          setCurrentUser(userInfo);
-          setUserEmail(userInfo.email);
-          setCards(cards);
-          setLoggedIn(true);
-          history.push('/');
-        })
-        .catch((err) => console.log(err));
+        setCurrentUser(userInfo);
+        setUserEmail(userInfo.email);
+        setCards(cards);
+        setLoggedIn(true);
+        history.push('/');
+      })
+      .catch((err) => console.log(err));
   }, [history]);
 
   useEffect(() => {
@@ -186,14 +186,15 @@ function App() {
 
   function onLogin(password, email) {
     Auth.login(password, email)
-      .then(({res}) => {
-        if (res.data) {
-          setUserEmail(res.data.email);
+      .then(( {data} ) => {
+        console.log(data);
+        if (data) {
+          setUserEmail(data.email);
           getContent();
           setLoggedIn(true);
           history.push('/');
         } else {
-          return Promise.reject(res.message);
+          return Promise.reject(data.message);
         }
       })
       .catch((err) => {
@@ -207,8 +208,22 @@ function App() {
   }
 
   function onSignOut(e) {
-    localStorage.removeItem('jwt');
-    setLoggedIn(false);
+    Auth.logout()
+      .then((response) => {
+        if (response) {
+          setLoggedIn(false);
+          return;
+        }
+        return Promise.reject();
+      })
+      .catch((err) => {
+        console.error(err);
+        setStateInfoTool({
+          isSuccess: false,
+          isOpen: true,
+          message: 'Что-то пошло не так! Попробуйте ещё раз.',
+        });
+      });
   }
 
   return (
@@ -242,7 +257,6 @@ function App() {
                 cards={cards.map((card) => {
                   return Card({
                     ...card,
-                    isOwn: true,
                     isOwn: card.owner === currentUser._id,
                     isLiked: card.likes.some((i) => i === currentUser._id),
                     handleCardClick,
