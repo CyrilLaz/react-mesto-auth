@@ -186,15 +186,14 @@ function App() {
 
   function onLogin(password, email) {
     Auth.login(password, email)
-      .then(( {data} ) => {
-        console.log(data);
-        if (data) {
-          setUserEmail(data.email);
+      .then(( res ) => {
+        if (res.data) {
+          setUserEmail(res.data.email);
           getContent();
           setLoggedIn(true);
           history.push('/');
         } else {
-          return Promise.reject(data.message);
+          return Promise.reject(res.message);
         }
       })
       .catch((err) => {
